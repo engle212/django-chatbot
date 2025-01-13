@@ -25,16 +25,52 @@
         </div>
         <div class="col-10 h-100 text-bg-dark">
           <div class="container-fluid w-75 h-100 d-flex flex-column pb-3 px-5">
-            <h2>col-10</h2>
-            <div class="h-100 overflow-y-auto">
-              content h-100
+            <div class="row h-100 overflow-y-auto align-items-end">
+              <div class="row h-75"></div>
+
+              <div class="row w-100 my-2" id="userMessage">
+                <div class="col-5"></div>
+                <div class="rounded-start-3 col-7 text-bg-secondary text-start">
+                  Hello, I am a user
+                </div>
+              </div>
+
+              <div class="row w-100 my-2" id="aiMessage">
+                <div class="rounded-end-3 col-7 text-bg-secondary text-start">
+                  Hello, I am a robot
+                </div>
+                <div class="col-5"></div>
+              </div>
+
+              <div class="row w-100 my-2" id="userMessage">
+                <div class="col-5"></div>
+                <div class="rounded-start-3 col-7 text-bg-secondary text-start">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras cursus ornare nibh, sed hendrerit elit tempus vel. Etiam nisl nunc, tempor iaculis metus commodo, laoreet mollis odio. Mauris volutpat mi vitae posuere dignissim. Integer magna sapien, fermentum non sodales at, faucibus in erat. Duis non tempor sem. Morbi mollis elit eu metus dignissim, vitae gravida dolor ultricies. Aliquam quis augue sollicitudin, porttitor nunc a, aliquam metus. Sed euismod iaculis iaculis. Nam volutpat odio a sapien fermentum, in congue quam blandit. Ut pretium risus nec faucibus sodales.
+                </div>
+              </div>
+
+              {% for u, m in messages %}
+                {% if u == 0 %}
+                  <div class="row w-100 my-2" id="userMessage">
+                    <div class="col-5"></div>
+                    <div class="rounded-start-3 col-7 text-bg-secondary text-start">{{ m }}</div>
+                  </div>
+                {% else %}
+                  <div class="row w-100 my-2" id="aiMessage">
+                    <div class="rounded-end-3 col-7 text-bg-secondary text-start">{{ m }}</div>
+                    <div class="col-5"></div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+
             </div>
-            <div class="row align-items-start">
-              <textarea rows="1" class="col form-control me-2 rounded-start-4 rounded-end-1 composer"></textarea>
-              <button class="btn col-1 h-100 text-bg-primary rounded-start-1 rounded-end-4">
-                <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
-              </button>
-            </div>
+            <form class="row align-items-start py-3" action="." method="post">
+                {% csrf_token %}
+                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-4 rounded-end-1 composer"></textarea>
+                <button class="btn col-1 h-100 text-bg-primary rounded-start-1 rounded-end-4" type="submit">
+                  <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
+                </button>
+            </form>
           </div>
         </div>
       </div>
