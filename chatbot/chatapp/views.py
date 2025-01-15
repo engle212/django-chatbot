@@ -1,4 +1,6 @@
-"""This module handles the views for the Django application. Currently, it also contains all of the actual app functionality."""
+"""
+This module handles the views for the Django application. Currently, it also contains all of the actual app functionality.
+"""
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
@@ -17,13 +19,14 @@ def index(request):
     The content to be displayed to the user. Passes in a context and request object to a template.
   """
   template = loader.get_template("chatapp/index.html")
+  # Create session
+  request.session['name'] = 'django-chatbot'
   session_key = request.session.session_key
+  
+  convo_filename = create_conversation(session_key)
+  
+  
 
-  print(get_all_conversations(session_key))
-
-  context = {}
-  #with open("data.json", "r") as infile:
-  #  context = json.load(infile)
   context = {
     "title": "django-chatbot",
     "messages": [
@@ -47,12 +50,96 @@ def index(request):
   print(context)
   return HttpResponse(template.render(context, request))
 
-def get_all_conversations(user_id):
-  data_files = os.listdir(os.path.join(settings.BASE_DIR, "chatapp/data"))
-  return data_files
+def create_conversation(user_id):
+  """
+  Create a new conversation file for the specified user.
 
-def get_conversation():
-  return
+  Parameters
+  ----------
+  user_id : string
+    The current session ID.
+  
+  Returns
+  -------
+  string
+    The name of the file created.
+  """
+  convo_files = get_all_conversations(user_id)
+  messages = {
+    "messages": []
+  }
+  filename = os.path.join(settings.BASE_DIR, str(user_id) + "_convo_" + str(len(convo_files)+1) + ".json")
+
+  with open(filename, "w") as outfile:
+    json.dump(messages, outfile)
+  
+  return filename
+
+def get_all_conversations(user_id):
+  """
+  Gets all of the user's conversation file names.
+
+  Parameters
+  ----------
+  user_id : string
+    The current session ID.
+
+  Returns
+  -------
+  list
+    The conversation file names associated with the user_id.
+  """
+  data_files = os.listdir(os.path.join(settings.BASE_DIR, "chatapp/data"))
+  filtered = [f for f in data_files if user_id in f]
+  return filtered
+
+def get_most_recent_conversation(user_id):
+  """
+  Gets the user's most-recently created conversation.
+
+  Parameters
+  ----------
+  user_id : string
+    The current session ID.
+
+  Returns
+  -------
+  list
+    The messages from the user's most-recently created conversation.
+  """
+  messages = []
+  all_convos = get_all_conversations(user_id)
+  if len(all_convos) > 0:
+    all_convos.sort(key=get_convo_id)
+    messages = get_conversation(user_id, get_convo_id(all_convos[-1]))
+  else:
+    filename = create_conversation(user_id)
+    messages = get_conversation(user_id, get_convo_id(filename))
+  return messages
+
+def get_convo_id(filename):
+  """
+  Get the conversation ID as an integer.
+
+  Parameters
+  ----------
+  filename : string
+    A filename pointing to a conversation JSON file.
+
+  Returns
+  -------
+  int
+    ID of the conversation associated with filename.
+  """
+  num_str = os.path.splitext(filename)[0].split("_")[2]
+  return int(num_str)
+
+def get_conversation(user_id, convo_id):
+  filename = os.path.join(settings.BASE_DIR, str(user_id) + "convo" + str(convo_id) + ".json")
+  messages = []
+  with open(filename, "r") as infile:
+    messages = json.load(infile)["messages"]
+  return messages
 
 def get_reply():
   """
