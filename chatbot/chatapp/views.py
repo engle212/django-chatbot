@@ -23,16 +23,14 @@ def index(request):
   request.session['name'] = 'django-chatbot'
   session_key = request.session.session_key
   
-  convo_filename = create_conversation(session_key)
-  
-  
+  filename, messages = get_most_recent_conversation(session_key)
+  print("GET MOST RECENT CONVERSATION (output)")
+  print(filename)
+  print(messages)
 
   context = {
     "title": "django-chatbot",
-    "messages": [
-      [0, "Hello, world! I am the user"],
-      [1, "Hello, I am a robot"]
-    ]
+    "messages": messages
   }
 
   if request.POST:
@@ -40,14 +38,13 @@ def index(request):
     # Reflect new message in view
     context["messages"].append([0, user_message])
     # Store user message in S3 bucket
-    store_message(session_key, 3, True, user_message)
+    store_message(session_key, get_convo_id(filename), True, user_message)
     # Get LLM's reply
     ai_message = get_reply()
     context["messages"].append([1, ai_message])
     # Store LLM message in S3 bucket
-    store_message(session_key, 3, False, ai_message)
+    store_message(session_key, get_convo_id(filename), False, ai_message)
 
-  print(context)
   return HttpResponse(template.render(context, request))
 
 def create_conversation(user_id):
@@ -68,12 +65,12 @@ def create_conversation(user_id):
   messages = {
     "messages": []
   }
-  filename = os.path.join(settings.BASE_DIR, str(user_id) + "_convo_" + str(len(convo_files)+1) + ".json")
+  filename = gen_filename(user_id, str(len(convo_files)+1))
 
   with open(filename, "w") as outfile:
     json.dump(messages, outfile)
   
-  return filename
+  return str(filename)
 
 def get_all_conversations(user_id):
   """
@@ -89,9 +86,9 @@ def get_all_conversations(user_id):
   list
     The conversation file names associated with the user_id.
   """
-  data_files = os.listdir(os.path.join(settings.BASE_DIR, "chatapp/data"))
+  data_files = os.listdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
   filtered = [f for f in data_files if user_id in f]
-  return filtered
+  return list(filtered)
 
 def get_most_recent_conversation(user_id):
   """
@@ -104,18 +101,24 @@ def get_most_recent_conversation(user_id):
 
   Returns
   -------
+  string
+    The name of the user's most-recently created conversation file.
   list
     The messages from the user's most-recently created conversation.
   """
   messages = []
+  filename = ""
   all_convos = get_all_conversations(user_id)
+  print(all_convos)
   if len(all_convos) > 0:
     all_convos.sort(key=get_convo_id)
-    messages = get_conversation(user_id, get_convo_id(all_convos[-1]))
+    convo_id = get_convo_id(all_convos[-1])
+    filename = gen_filename(user_id, convo_id)
+    messages = get_conversation(user_id, convo_id)
   else:
     filename = create_conversation(user_id)
     messages = get_conversation(user_id, get_convo_id(filename))
-  return messages
+  return str(filename), list(messages)
 
 def get_convo_id(filename):
   """
@@ -135,11 +138,25 @@ def get_convo_id(filename):
   return int(num_str)
 
 def get_conversation(user_id, convo_id):
-  filename = os.path.join(settings.BASE_DIR, str(user_id) + "convo" + str(convo_id) + ".json")
+  filename = gen_filename(user_id, convo_id)
   messages = []
   with open(filename, "r") as infile:
-    messages = json.load(infile)["messages"]
-  return messages
+    messages = json.load(infile)
+  return list(messages)
+
+def update_conversation(user_id, convo_id, new_data):
+  is_successful = False
+  filename = gen_filename(user_id, convo_id)
+  
+  with open(filename, "w") as outfile:
+    json.dump(new_data, outfile)
+    is_successful = True
+
+  return is_successful
+
+def gen_filename(user_id, convo_id):
+  filename = os.path.join(settings.BASE_DIR, "chatapp\\data\\" + str(user_id) + "_convo_" + str(convo_id) + ".json")
+  return str(filename)
 
 def get_reply():
   """
@@ -151,9 +168,8 @@ def get_reply():
     The output of the LLM based on the latest input message.
   """
   print("Getting response...")
-  time.sleep(2)
-  
-  return "Robot words and such"
+  reply = "Robot words and such"
+  return reply
 
 def store_message(user_id, convo_id, is_user, message):
   """
@@ -176,12 +192,10 @@ def store_message(user_id, convo_id, is_user, message):
     Indicates whether the message could be successfully stored.
   """
   is_successful = False
-
-  print(f"User ID: {user_id}")
-  print(f"Conversation ID: {convo_id}")
-  print(f"Is User?: {is_user}")
-  print(f"User ID: {message}")
-
-  is_successful = True
+  print(user_id)
+  print(convo_id)
+  messages = get_conversation(user_id, convo_id)
+  messages.append([(not is_user) * 1, message])
+  is_successful = update_conversation(user_id, convo_id, messages)
 
   return is_successful
