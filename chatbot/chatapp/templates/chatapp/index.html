@@ -18,15 +18,21 @@
     <div class="container-fluid text-center h-100">
       <div class="row align-items-start flex-grow-1 h-100">
         <div class="col-2 d-flex flex-column h-100 text-bg-secondary">
-          <h2>col-2</h2>
           <div class="h-100 overflow-y-auto">
-            content h-100
+            
+            <div class="row w-100" style="height: 5vh;"></div>
+            <button class="btn my-1 w-100 text-bg-info rounded" style="height: 10vh" type="submit">Start New Conversation</button>
+
+            {% for f in convos %}
+              <div class="border w-100 my-1" style="height: 10vh">{{ f }}</div>
+            {% endfor %}
           </div>
         </div>
+        
         <div class="col-10 h-100 text-bg-dark">
-          <div class="container-fluid w-75 h-100 d-flex flex-column pb-3 px-5">
+          <div class="container-fluid w-75 d-flex flex-column pb-3 px-5" style="height: 95vh">
+            <div class="row w-100" style="height: 5vh;"></div>
             <div class="row h-100 overflow-y-auto align-items-end">
-              
 
               <div class="row w-100 my-2" id="userMessage">
                 <div class="col-5"></div>

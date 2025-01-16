@@ -24,13 +24,13 @@ def index(request):
   session_key = request.session.session_key
   
   filename, messages = get_most_recent_conversation(session_key)
-  print("GET MOST RECENT CONVERSATION (output)")
-  print(filename)
-  print(messages)
+
+  all_convos = get_all_conversations(session_key)
 
   context = {
     "title": "django-chatbot",
-    "messages": messages
+    "messages": messages,
+    "convos": all_convos,
   }
 
   if request.POST:
@@ -109,7 +109,6 @@ def get_most_recent_conversation(user_id):
   messages = []
   filename = ""
   all_convos = get_all_conversations(user_id)
-  print(all_convos)
   if len(all_convos) > 0:
     all_convos.sort(key=get_convo_id)
     convo_id = get_convo_id(all_convos[-1])
