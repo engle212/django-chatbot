@@ -1,5 +1,6 @@
 """
-This module handles the views for the Django application. Currently, it also contains all of the actual app functionality.
+This module handles the views for the Django application. Currently,
+it also contains all of the actual app functionality.
 """
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -38,12 +39,18 @@ def index(request):
     # Reflect new message in view
     context["messages"].append([0, user_message])
     # Store user message in S3 bucket
-    store_message(session_key, get_convo_id(filename), True, user_message)
+    store_message(session_key,
+                  get_convo_id(filename),
+                  True,
+                  user_message)
     # Get LLM's reply
     ai_message = get_reply()
     context["messages"].append([1, ai_message])
     # Store LLM message in S3 bucket
-    store_message(session_key, get_convo_id(filename), False, ai_message)
+    store_message(session_key,
+                  get_convo_id(filename),
+                  False,
+                  ai_message)
 
   return HttpResponse(template.render(context, request))
 
@@ -86,9 +93,8 @@ def get_all_conversations(user_id):
   list
     The conversation file names associated with the user_id.
   """
-  data_files = os.listdir(os.path.join(
-                            settings.BASE_DIR, 
-                            "chatapp\\data"))
+  data_files = os.listdir(os.path.join(settings.BASE_DIR,
+                                       "chatapp\\data"))
   filtered = [f for f in data_files if user_id in f]
   return list(filtered)
 
@@ -171,7 +177,8 @@ def update_conversation(user_id, convo_id, new_data):
   convo_id : string
     The ID of the specified conversation.
   new_data : string
-    The conversation data to replace the existing contents of the conversation.
+    The conversation data to replace the existing contents of the
+    conversation.
     
   Returns
   -------
@@ -204,12 +211,18 @@ def gen_filename(user_id, convo_id):
   string
     The filename of the specified conversation.
   """
-  filename = os.path.join(settings.BASE_DIR, "chatapp\\data\\" + str(user_id) + "_convo_" + str(convo_id) + ".json")
+  filename = os.path.join(settings.BASE_DIR, 
+                          "chatapp\\data\\"
+                          + str(user_id)
+                          + "_convo_"
+                          + str(convo_id)
+                          + ".json")
   return str(filename)
 
 def get_reply():
   """
-  Prompts the LLM for a response. Uses the chat history from S3 as input for the model.
+  Prompts the LLM for a response. Uses the chat history from S3 as
+  input for the model.
   
   Returns
   -------
@@ -222,7 +235,8 @@ def get_reply():
 
 def store_message(user_id, convo_id, is_user, message):
   """
-  Communicates with the S3 bucket to add a new message to the correct convo file.
+  Communicates with the S3 bucket to add a new message to the correct
+  convo file.
 
   Parameters
   ----------
