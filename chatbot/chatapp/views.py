@@ -16,7 +16,8 @@ def index(request):
   Returns
   -------
   HttpResponse
-    The content to be displayed to the user. Passes in a context and request object to a template.
+    The content to be displayed to the user. Passes in a context and 
+    request object to a template.
   """
   template = loader.get_template("chatapp/index.html")
   # Create session
@@ -24,7 +25,6 @@ def index(request):
   session_key = request.session.session_key
   
   filename, messages = get_most_recent_conversation(session_key)
-
   all_convos = get_all_conversations(session_key)
 
   context = {
@@ -86,7 +86,9 @@ def get_all_conversations(user_id):
   list
     The conversation file names associated with the user_id.
   """
-  data_files = os.listdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
+  data_files = os.listdir(os.path.join(
+                            settings.BASE_DIR, 
+                            "chatapp\\data"))
   filtered = [f for f in data_files if user_id in f]
   return list(filtered)
 
@@ -137,6 +139,21 @@ def get_convo_id(filename):
   return int(num_str)
 
 def get_conversation(user_id, convo_id):
+  """
+  Get the messages of a specific conversation.
+
+  Parameters
+  ----------
+  user_id : string
+    The ID of the user who owns the specified conversation.
+  convo_id : string
+    The ID of the specified conversation.
+
+  Returns
+  -------
+  list
+    The messages from the specified conversation.
+  """
   filename = gen_filename(user_id, convo_id)
   messages = []
   with open(filename, "r") as infile:
@@ -144,6 +161,24 @@ def get_conversation(user_id, convo_id):
   return list(messages)
 
 def update_conversation(user_id, convo_id, new_data):
+  """
+  Overwrite the data in a conversation.
+
+  Parameters
+  ----------
+  user_id : string
+    The ID of the user who owns the specified conversation.
+  convo_id : string
+    The ID of the specified conversation.
+  new_data : string
+    The conversation data to replace the existing contents of the conversation.
+    
+  Returns
+  -------
+  boolean
+    Indicates whether the conversation could be successfully updated.
+
+  """
   is_successful = False
   filename = gen_filename(user_id, convo_id)
   
@@ -154,6 +189,21 @@ def update_conversation(user_id, convo_id, new_data):
   return is_successful
 
 def gen_filename(user_id, convo_id):
+  """
+  Get the filename of a specific conversation.
+
+  Parameters
+  ----------
+  user_id : string
+    The ID of the user who owns the specified conversation.
+  convo_id : string
+    The ID of the specified conversation.
+
+  Returns
+  -------
+  string
+    The filename of the specified conversation.
+  """
   filename = os.path.join(settings.BASE_DIR, "chatapp\\data\\" + str(user_id) + "_convo_" + str(convo_id) + ".json")
   return str(filename)
 
