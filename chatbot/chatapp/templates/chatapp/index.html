@@ -34,27 +34,6 @@
             <div class="row w-100" style="height: 5vh;"></div>
             <div class="row h-100 overflow-y-auto align-items-end">
 
-              <div class="row w-100 my-2" id="userMessage">
-                <div class="col-5"></div>
-                <div class="rounded-start-3 col-7 text-bg-secondary text-start">
-                  Hello, I am a user
-                </div>
-              </div>
-
-              <div class="row w-100 my-2" id="aiMessage">
-                <div class="rounded-end-3 col-7 text-bg-secondary text-start">
-                  Hello, I am a robot
-                </div>
-                <div class="col-5"></div>
-              </div>
-
-              <div class="row w-100 my-2" id="userMessage">
-                <div class="col-5"></div>
-                <div class="rounded-start-3 col-7 text-bg-secondary text-start">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras cursus ornare nibh, sed hendrerit elit tempus vel. Etiam nisl nunc, tempor iaculis metus commodo, laoreet mollis odio. Mauris volutpat mi vitae posuere dignissim. Integer magna sapien, fermentum non sodales at, faucibus in erat. Duis non tempor sem. Morbi mollis elit eu metus dignissim, vitae gravida dolor ultricies. Aliquam quis augue sollicitudin, porttitor nunc a, aliquam metus. Sed euismod iaculis iaculis. Nam volutpat odio a sapien fermentum, in congue quam blandit. Ut pretium risus nec faucibus sodales.
-                </div>
-              </div>
-
               {% for u, m in messages %}
                 {% if u == 0 %}
                   <div class="row w-100 my-2" id="userMessage">

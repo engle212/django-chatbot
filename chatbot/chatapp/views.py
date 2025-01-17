@@ -7,8 +7,9 @@ from django.http import HttpResponse
 from django.template import loader
 from django.conf import settings
 import json
-import time
+import yaml
 import os
+from huggingface_hub import InferenceClient
 
 def index(request):
   """
@@ -28,6 +29,8 @@ def index(request):
   filename, messages = get_most_recent_conversation(session_key)
   all_convos = get_all_conversations(session_key)
 
+  print(messages)
+
   context = {
     "title": "django-chatbot",
     "messages": messages,
@@ -39,19 +42,19 @@ def index(request):
     # Reflect new message in view
     context["messages"].append([0, user_message])
     # Store user message in S3 bucket
+    convo_id = get_convo_id(filename)
     store_message(session_key,
-                  get_convo_id(filename),
+                  convo_id,
                   True,
                   user_message)
     # Get LLM's reply
-    ai_message = get_reply()
+    ai_message = get_reply(session_key, convo_id)
     context["messages"].append([1, ai_message])
     # Store LLM message in S3 bucket
     store_message(session_key,
-                  get_convo_id(filename),
+                  convo_id,
                   False,
                   ai_message)
-
   return HttpResponse(template.render(context, request))
 
 def create_conversation(user_id):
@@ -164,7 +167,7 @@ def get_conversation(user_id, convo_id):
   messages = []
   with open(filename, "r") as infile:
     messages = json.load(infile)
-  return list(messages)
+  return list(messages["messages"])
 
 def update_conversation(user_id, convo_id, new_data):
   """
@@ -219,7 +222,7 @@ def gen_filename(user_id, convo_id):
                           + ".json")
   return str(filename)
 
-def get_reply():
+def get_reply(user_id, convo_id):
   """
   Prompts the LLM for a response. Uses the chat history from S3 as
   input for the model.
@@ -229,8 +232,29 @@ def get_reply():
   string
     The output of the LLM based on the latest input message.
   """
+  # Authenticate
+  data = []
+  with open(os.path.join(settings.BASE_DIR, 
+                         "chatapp\\data\\api_key.yaml")) as file:
+    data = yaml.safe_load(file)
+
+  key = ""
+  if len(data) > 0:
+    key = data["key"]
+  else:
+    return "API key must be supplied."
+
   print("Getting response...")
-  reply = "Robot words and such"
+  client = InferenceClient(api_key=key)
+
+  convo = get_conversation(user_id, convo_id)
+  messages = [{"role": "user", "content": m[1]} if m[0] == 0 else {"role": "assistant", "content": m[1]} for m in convo]
+
+  stream = client.chat.completions.create(model="google/gemma-2-9b-it", messages=messages, temperature=0.5, max_tokens=1024, top_p=0.7, stream=True)
+  reply = ""
+  for chunk in stream:
+    reply = reply + str(chunk.choices[0].delta.content)
+
   return reply
 
 def store_message(user_id, convo_id, is_user, message):
@@ -255,10 +279,8 @@ def store_message(user_id, convo_id, is_user, message):
     Indicates whether the message could be successfully stored.
   """
   is_successful = False
-  print(user_id)
-  print(convo_id)
   messages = get_conversation(user_id, convo_id)
   messages.append([(not is_user) * 1, message])
-  is_successful = update_conversation(user_id, convo_id, messages)
+  is_successful = update_conversation(user_id, convo_id, {"messages": messages})
 
   return is_successful
