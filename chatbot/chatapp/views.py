@@ -26,15 +26,23 @@ def index(request):
   request.session['name'] = 'django-chatbot'
   session_key = request.session.session_key
   
-  filename, messages = get_most_recent_conversation(session_key)
-  convo_id = get_convo_id(filename)
+  convo_id = ""
+  if "active_convo" in request.session:
+    convo_id = request.session["active_convo"]
+    messages = get_conversation(session_key, convo_id)
+    filename = gen_filename(session_key, convo_id)
+  else:
+    filename, messages = get_most_recent_conversation(session_key)
+    convo_id = get_convo_id(filename)
+    request.session["active_convo"] = convo_id
+
   all_convos = get_all_conversations(session_key)
 
   context = {
     "title": "django-chatbot",
+    "convo_id": convo_id,
     "messages": messages,
-    "convos": all_convos,
-    "summaries": []
+    "convos": []
   }
 
   if request.POST:
@@ -56,7 +64,10 @@ def index(request):
                   ai_message)
 
   all_sums = [get_summary(os.path.join(settings.BASE_DIR, "chatapp\\data\\" + c)) for c in all_convos]
-  context["summaries"] = all_sums
+  all_convo_ids = [get_convo_id(c) for c in all_convos]
+  convo_list = zip(all_convo_ids, all_convos, all_sums)
+  context["convos"] = convo_list
+
   update_convo_summary(session_key, convo_id)
   return HttpResponse(template.render(context, request))
 
@@ -70,6 +81,18 @@ def new_convo_button(request):
     A redirect to the index page (page reload).
   """
   filename = create_conversation(request.session.session_key)
+  return redirect('index')
+
+def switch_convo_button(request, convo_id):
+  """
+  Handles user selecting a new conversation. Change the active conversation.
+
+  Returns
+  -------
+  HttpResponseRedirect
+    A redirect to the index page (page reload).
+  """
+  request.session['active_convo'] = convo_id
   return redirect('index')
 
 def get_summary(filename):

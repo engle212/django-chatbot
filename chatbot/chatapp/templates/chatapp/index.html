@@ -20,12 +20,11 @@
       <div class="row align-items-start flex-grow-1 h-100">
         <div class="col-2 d-flex flex-column h-100 text-bg-secondary">
           <div class="h-100 overflow-y-auto">
-            
             <div class="row w-100" style="height: 5vh;"></div>
             <button class="btn my-1 w-100 text-bg-info rounded" id="newConvo" style="height: 10vh" type="submit" data-url="{% url 'new_convo_button' %}">Start New Conversation</button>
 
-            {% for s in summaries %}
-              <button class="btn my-1 w-100 text-bg-dark rounded text-start" style="height: 5vh" type="submit" data-url="{% url 'new_convo_button' %}">{{ s }}</button>
+            {% for i, f, s in convos %}
+              <button class="btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: 5vh" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
             {% endfor %}
           </div>
         </div>
@@ -52,8 +51,8 @@
             </div>
             <form class="row align-items-start py-3" action="." method="post">
                 {% csrf_token %}
-                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-4 rounded-end-1 composer"></textarea>
-                <button class="btn col-1 h-100 text-bg-primary rounded-start-1 rounded-end-4" type="submit">
+                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer"></textarea>
+                <button class="btn col-1 h-100 text-bg-primary rounded-start-2 rounded-end-5" type="submit">
                   <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
                 </button>
             </form>
@@ -62,6 +61,6 @@
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="{% static 'chatapp/js/new_convo.js' %}"></script>
+    <script type="text/javascript" src="{% static 'chatapp/js/setup.js' %}"></script>
   </body>
 </html>
