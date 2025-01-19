@@ -27,14 +27,14 @@ def index(request):
   session_key = request.session.session_key
   
   filename, messages = get_most_recent_conversation(session_key)
+  convo_id = get_convo_id(filename)
   all_convos = get_all_conversations(session_key)
-
-  print(messages)
 
   context = {
     "title": "django-chatbot",
     "messages": messages,
     "convos": all_convos,
+    "summaries": []
   }
 
   if request.POST:
@@ -42,7 +42,6 @@ def index(request):
     # Reflect new message in view
     context["messages"].append([0, user_message])
     # Store user message in S3 bucket
-    convo_id = get_convo_id(filename)
     store_message(session_key,
                   convo_id,
                   True,
@@ -55,13 +54,77 @@ def index(request):
                   convo_id,
                   False,
                   ai_message)
+
+  all_sums = [get_summary(os.path.join(settings.BASE_DIR, "chatapp\\data\\" + c)) for c in all_convos]
+  context["summaries"] = all_sums
+  update_convo_summary(session_key, convo_id)
   return HttpResponse(template.render(context, request))
 
 def new_convo_button(request):
-  print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
   filename = create_conversation(request.session.session_key)
-  print(filename)
   return redirect('index')
+
+def get_summary(filename):
+  summary = ""
+  with open(filename, "r") as infile:
+    summary = json.load(infile)["summary"]
+  return summary
+
+def update_convo_summary(user_id, convo_id):
+  is_successful = False
+  filename = gen_filename(user_id, convo_id)
+  convo = get_conversation(user_id, convo_id)
+  
+  if len(convo) >= 3:
+    with open(filename, "w") as file:
+      data = []
+      with open(os.path.join(settings.BASE_DIR, 
+                             "chatapp\\data\\api_key.yaml")) as key_file:
+        data = yaml.safe_load(key_file)
+
+      key = ""
+      if len(data) > 0:
+        key = data["key"]
+      else:
+        return "API key must be supplied."
+      client = InferenceClient(api_key=key)
+
+      messages = [{"role": "user", "content": m[1]}
+                  if m[0] == 0
+                  else {"role": "assistant", "content": m[1]}
+                  for m in convo]
+
+      messages.append({"role": "user", "content": "Give this conversation a descriptive, 5-word title with no emojis"})
+
+      stream = client.chat.completions.create(model="google/gemma-2-9b-it",
+                                              messages=messages,
+                                              temperature=0.5,
+                                              max_tokens=1024,
+                                              top_p=0.7,
+                                              stream=True)
+      reply = ""
+      for chunk in stream:
+        reply = reply + str(chunk.choices[0].delta.content)
+
+      convo_dict = {
+        "messages": convo,
+        "summary": reply
+      }
+      # Save dictionary to file
+      json.dump(convo_dict, file)
+
+      is_successful = True
+  else:
+    with open(filename, "w") as file:
+      convo_dict = {
+        "messages": convo,
+        "summary": "A new conversation."
+      }
+      # Save dictionary to file
+      json.dump(convo_dict, file)
+
+      is_successful = True
+  return is_successful
 
 def create_conversation(user_id):
   """
@@ -78,13 +141,14 @@ def create_conversation(user_id):
     The name of the file created.
   """
   convo_files = get_all_conversations(user_id)
-  messages = {
-    "messages": []
+  convo = {
+    "messages": [],
+    "summary": ""
   }
   filename = gen_filename(user_id, str(len(convo_files)+1))
 
   with open(filename, "w") as outfile:
-    json.dump(messages, outfile)
+    json.dump(convo, outfile)
   
   return str(filename)
 
@@ -294,9 +358,10 @@ def store_message(user_id, convo_id, is_user, message):
   """
   is_successful = False
   messages = get_conversation(user_id, convo_id)
+  summary = get_summary(gen_filename(user_id, convo_id))
   messages.append([(not is_user) * 1, message])
   is_successful = update_conversation(user_id,
                                       convo_id,
-                                      {"messages": messages})
+                                      {"messages": messages, "summary": summary})
 
   return is_successful

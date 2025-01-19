@@ -24,8 +24,8 @@
             <div class="row w-100" style="height: 5vh;"></div>
             <button class="btn my-1 w-100 text-bg-info rounded" id="newConvo" style="height: 10vh" type="submit" data-url="{% url 'new_convo_button' %}">Start New Conversation</button>
 
-            {% for f in convos %}
-              <div class="border w-100 my-1" style="height: 10vh">{{ f }}</div>
+            {% for s in summaries %}
+              <button class="btn my-1 w-100 text-bg-dark rounded text-start" style="height: 5vh" type="submit" data-url="{% url 'new_convo_button' %}">{{ s }}</button>
             {% endfor %}
           </div>
         </div>
