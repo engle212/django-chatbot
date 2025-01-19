@@ -61,16 +61,51 @@ def index(request):
   return HttpResponse(template.render(context, request))
 
 def new_convo_button(request):
+  """
+  Handles button press for "Start New Conversation" button.
+
+  Returns
+  -------
+  HttpResponseRedirect
+    A redirect to the index page (page reload).
+  """
   filename = create_conversation(request.session.session_key)
   return redirect('index')
 
 def get_summary(filename):
+  """
+  Get the summary in a specified conversation file.
+
+  Parameters
+  ----------
+  filename : string
+    The path to the file of the conversation whose summary is requested.
+  Returns
+  -------
+  string
+    The summary of the conversation.
+  """
   summary = ""
   with open(filename, "r") as infile:
     summary = json.load(infile)["summary"]
   return summary
 
 def update_convo_summary(user_id, convo_id):
+  """
+  Update the summary of the specified conversation.
+
+  Parameters
+  ----------
+  user_id : string
+    The ID of the user who owns the specified conversation.
+  convo_id : string
+    The ID of the specified conversation.
+
+  Returns
+  -------
+  boolean
+    Indicates whether the summary could be successfully updated.
+  """
   is_successful = False
   filename = gen_filename(user_id, convo_id)
   convo = get_conversation(user_id, convo_id)
