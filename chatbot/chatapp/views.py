@@ -2,7 +2,7 @@
 This module handles the views for the Django application. Currently,
 it also contains all of the actual app functionality.
 """
-from django.shortcuts import render
+from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.template import loader
 from django.conf import settings
@@ -56,6 +56,12 @@ def index(request):
                   False,
                   ai_message)
   return HttpResponse(template.render(context, request))
+
+def new_convo_button(request):
+  print("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
+  filename = create_conversation(request.session.session_key)
+  print(filename)
+  return redirect('index')
 
 def create_conversation(user_id):
   """
@@ -248,9 +254,17 @@ def get_reply(user_id, convo_id):
   client = InferenceClient(api_key=key)
 
   convo = get_conversation(user_id, convo_id)
-  messages = [{"role": "user", "content": m[1]} if m[0] == 0 else {"role": "assistant", "content": m[1]} for m in convo]
+  messages = [{"role": "user", "content": m[1]}
+              if m[0] == 0
+              else {"role": "assistant", "content": m[1]}
+              for m in convo]
 
-  stream = client.chat.completions.create(model="google/gemma-2-9b-it", messages=messages, temperature=0.5, max_tokens=1024, top_p=0.7, stream=True)
+  stream = client.chat.completions.create(model="google/gemma-2-9b-it",
+                                          messages=messages,
+                                          temperature=0.5,
+                                          max_tokens=1024,
+                                          top_p=0.7,
+                                          stream=True)
   reply = ""
   for chunk in stream:
     reply = reply + str(chunk.choices[0].delta.content)
@@ -281,6 +295,8 @@ def store_message(user_id, convo_id, is_user, message):
   is_successful = False
   messages = get_conversation(user_id, convo_id)
   messages.append([(not is_user) * 1, message])
-  is_successful = update_conversation(user_id, convo_id, {"messages": messages})
+  is_successful = update_conversation(user_id,
+                                      convo_id,
+                                      {"messages": messages})
 
   return is_successful
