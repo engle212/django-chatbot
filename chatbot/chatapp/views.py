@@ -176,7 +176,7 @@ def update_convo_summary(user_id, convo_id):
     with open(filename, "w") as file:
       convo_dict = {
         "messages": convo,
-        "summary": "A new conversation."
+        "summary": "A new conversation"
       }
       # Save dictionary to file
       json.dump(convo_dict, file)
