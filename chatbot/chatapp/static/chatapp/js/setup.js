@@ -11,3 +11,8 @@ for (var i = 0; i < convoButtons.length; i++) {
     window.location.replace(url);
   });
 };
+
+window.addEventListener("load", function(e) {
+  var messagePane = document.getElementById("messagePane")
+  messagePane.scrollTo(0, messagePane.scrollHeight);
+});

@@ -380,7 +380,7 @@ def get_reply(user_id, convo_id):
   client = InferenceClient(api_key=key)
 
   convo = get_conversation(user_id, convo_id)
-  messages = [{"role": "user", "content": m[1]}
+  messages = [{"role": "user", "content": "Write an introduction before your response. " + m[1] }
               if m[0] == 0
               else {"role": "assistant", "content": m[1]}
               for m in convo]
@@ -399,7 +399,8 @@ def get_reply(user_id, convo_id):
                            extensions=[
                              "pymdownx.superfences",
                              "markdown.extensions.codehilite",
-                             "markdown.extensions.tables"
+                             "markdown.extensions.tables",
+                             "markdown.extensions.sane_lists"
                            ])
   return html
 

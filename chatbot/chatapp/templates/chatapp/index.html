@@ -9,6 +9,7 @@
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'chatapp/css/monokai.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'chatapp/css/styles.css' %}">
+    <link rel="icon" href="{% static 'chatapp/favicon.ico' %}" type="image/x-icon">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   </head>
   <body class="d-flex flex-column">
@@ -21,30 +22,30 @@
       <div class="row align-items-start flex-grow-1 h-100">
         <div class="col-2 d-flex flex-column h-100 text-bg-dark border-end">
           <div class="h-100 overflow-y-auto">
-            <div class="row w-100" style="height: 5vh;"></div>
-            <button class="btn my-1 w-100 text-bg-info rounded" id="newConvo" style="height: 10vh" type="submit" data-url="{% url 'new_convo_button' %}">Start New Conversation</button>
+            <div class="w-100" style="height: 5vh;"></div>
+            <button class="btn btn-light text-start rounded my-1 w-100" id="newConvo" style="height: 8vh" type="submit" data-url="{% url 'new_convo_button' %}">New Conversation</button>
 
             {% for i, f, s in convos %}
-              <button class="border btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: min-content" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
+              <button class="border btn my-1 w-100 btn-dark rounded text-start convo" style="height: min-content" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
             {% endfor %}
           </div>
         </div>
         
         <div class="col-10 h-100 text-bg-dark">
-          <div class="container-fluid w-75 d-flex flex-column pb-3 px-5" style="height: 95vh">
+          <div class="container-fluid w-100 d-flex flex-column pb-3 px-5" style="height: 95vh">
             <div class="row w-100" style="height: 5vh;"></div>
 
-            <div class="d-flex flex-column h-100 overflow-y-auto"><!--NEW-->
+            <div class="d-flex flex-column h-100 overflow-y-auto" id="messagePane">
               {% for u, m in messages %}
                 <div class="row mb-3 w-100">
                 {% if u == 0 %}
                   <div class="col-5"></div>
-                  <div class="border rounded-3 col-7 text-bg-secondary text-start px-4 py-3 lh-md">
+                  <div class="border rounded-3 col-7 text-bg-secondary text-start px-4 py-3 lh-lg">
                     {{ m }}
                   </div>
                 {% else %}
                   <div class="col-1"></div>
-                  <div class="border rounded-3 col-8 text-start px-5 py-5 lh-md">
+                  <div class="border rounded-3 col-8 text-start px-4 py-5 lh-lg">
                     {{ m | safe }}
                   </div>
                   <div class="col-3"></div>
@@ -54,11 +55,11 @@
             </div>
 
             <form class="row align-items-start py-3" action="." method="post">
-                {% csrf_token %}
-                <textarea oninput='this.style.height = "";this.style.height = this.scrollHeight + 3 + "px"' name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer text-bg-dark" id="comp"></textarea>
-                <button class="btn col-1 h-100 text-bg-info rounded-start-2 rounded-end-5" type="submit">
-                  <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
-                </button>
+              {% csrf_token %}
+              <textarea oninput='this.style.height = "";this.style.height = this.scrollHeight + 3 + "px"' name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer text-bg-dark" id="comp"></textarea>
+              <button class="btn btn-info col-1 h-100 rounded-start-2 rounded-end-5" type="submit">
+                <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
+              </button>
             </form>
           </div>
         </div>
