@@ -272,8 +272,8 @@ def get_convo_id(filename):
   int
     ID of the conversation associated with filename.
   """
-  num_str = os.path.splitext(filename)[0].split("_")[2]
-  return int(num_str)
+  num_str = os.path.splitext(filename)[0].split("_")[-1]
+  return num_str
 
 def get_conversation(user_id, convo_id):
   """
