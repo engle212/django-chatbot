@@ -9,6 +9,7 @@ from django.conf import settings
 import json
 import yaml
 import os
+import markdown
 from huggingface_hub import InferenceClient
 
 def index(request):
@@ -23,6 +24,9 @@ def index(request):
   """
   template = loader.get_template("chatapp/index.html")
   # Create session
+  if not request.session.session_key:
+    request.session.create()
+  session_key = request.session.session_key
   request.session['name'] = 'django-chatbot'
   session_key = request.session.session_key
   
@@ -391,7 +395,13 @@ def get_reply(user_id, convo_id):
   for chunk in stream:
     reply = reply + str(chunk.choices[0].delta.content)
 
-  return reply
+  html = markdown.markdown(reply, 
+                           extensions=[
+                             "pymdownx.superfences",
+                             "markdown.extensions.codehilite",
+                             "markdown.extensions.tables"
+                           ])
+  return html
 
 def store_message(user_id, convo_id, is_user, message):
   """
