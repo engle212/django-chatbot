@@ -25,7 +25,7 @@
             <button class="btn my-1 w-100 text-bg-info rounded" id="newConvo" style="height: 10vh" type="submit" data-url="{% url 'new_convo_button' %}">Start New Conversation</button>
 
             {% for i, f, s in convos %}
-              <button class="border btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: 5vh" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
+              <button class="border btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: min-content" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
             {% endfor %}
           </div>
         </div>
@@ -55,7 +55,7 @@
 
             <form class="row align-items-start py-3" action="." method="post">
                 {% csrf_token %}
-                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer text-bg-dark"></textarea>
+                <textarea oninput='this.style.height = "";this.style.height = this.scrollHeight + 3 + "px"' name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer text-bg-dark" id="comp"></textarea>
                 <button class="btn col-1 h-100 text-bg-info rounded-start-2 rounded-end-5" type="submit">
                   <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
                 </button>

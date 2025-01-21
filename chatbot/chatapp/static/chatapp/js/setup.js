@@ -10,4 +10,4 @@ for (var i = 0; i < convoButtons.length; i++) {
     var url = e.target.attributes["data-url"].value;
     window.location.replace(url);
   });
-}
+};
