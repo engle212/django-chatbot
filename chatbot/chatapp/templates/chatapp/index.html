@@ -12,20 +12,20 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   </head>
   <body class="d-flex flex-column">
-    <nav class="navbar bg-body-tertiary">
+    <nav class="navbar text-bg-dark border-bottom">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">{{ title }}</a>
+        <a class="navbar-brand text-bg-dark" href="#">{{ title }}</a>
       </div>
     </nav>
     <div class="container-fluid text-center h-100">
       <div class="row align-items-start flex-grow-1 h-100">
-        <div class="col-2 d-flex flex-column h-100 text-bg-secondary">
+        <div class="col-2 d-flex flex-column h-100 text-bg-dark border-end">
           <div class="h-100 overflow-y-auto">
             <div class="row w-100" style="height: 5vh;"></div>
             <button class="btn my-1 w-100 text-bg-info rounded" id="newConvo" style="height: 10vh" type="submit" data-url="{% url 'new_convo_button' %}">Start New Conversation</button>
 
             {% for i, f, s in convos %}
-              <button class="btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: 5vh" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
+              <button class="border btn my-1 w-100 text-bg-dark rounded text-start convo" style="height: 5vh" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
             {% endfor %}
           </div>
         </div>
@@ -39,7 +39,7 @@
                 <div class="row mb-3 w-100">
                 {% if u == 0 %}
                   <div class="col-5"></div>
-                  <div class="rounded-3 col-7 text-bg-secondary text-start px-4 py-3 lh-md">
+                  <div class="border rounded-3 col-7 text-bg-secondary text-start px-4 py-3 lh-md">
                     {{ m }}
                   </div>
                 {% else %}
@@ -55,8 +55,8 @@
 
             <form class="row align-items-start py-3" action="." method="post">
                 {% csrf_token %}
-                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer"></textarea>
-                <button class="btn col-1 h-100 text-bg-primary rounded-start-2 rounded-end-5" type="submit">
+                <textarea name="text" rows="1" class="col form-control me-2 rounded-start-2 rounded-end-1 composer text-bg-dark"></textarea>
+                <button class="btn col-1 h-100 text-bg-info rounded-start-2 rounded-end-5" type="submit">
                   <img src="{% static 'chatapp/chevron-up.svg' %}" alt="Icon" width="24" height="24">
                 </button>
             </form>

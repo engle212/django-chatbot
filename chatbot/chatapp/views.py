@@ -49,7 +49,7 @@ def index(request):
     "convos": []
   }
 
-  if request.POST:
+  if request.POST and request.POST["text"]:
     user_message = request.POST["text"]
     # Reflect new message in view
     context["messages"].append([0, user_message])
@@ -137,7 +137,7 @@ def update_convo_summary(user_id, convo_id):
   filename = gen_filename(user_id, convo_id)
   convo = get_conversation(user_id, convo_id)
   
-  if len(convo) >= 3:
+  if len(convo) >= 2:
     with open(filename, "w") as file:
       data = []
       with open(os.path.join(settings.BASE_DIR, 
@@ -205,7 +205,7 @@ def create_conversation(user_id):
   convo_files = get_all_conversations(user_id)
   convo = {
     "messages": [],
-    "summary": ""
+    "summary": "A new conversation"
   }
   filename = gen_filename(user_id, str(len(convo_files)+1))
 
