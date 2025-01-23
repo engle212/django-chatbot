@@ -11,6 +11,7 @@ import yaml
 import os
 import markdown
 from huggingface_hub import InferenceClient
+from decouple import config
 
 def index(request):
   """
@@ -139,17 +140,7 @@ def update_convo_summary(user_id, convo_id):
   
   if len(convo) >= 2:
     with open(filename, "w") as file:
-      data = []
-      with open(os.path.join(settings.BASE_DIR, 
-                             "chatapp\\data\\api_key.yaml")) as key_file:
-        data = yaml.safe_load(key_file)
-
-      key = ""
-      if len(data) > 0:
-        key = data["key"]
-      else:
-        return "API key must be supplied."
-      client = InferenceClient(api_key=key)
+      client = InferenceClient(api_key=config("HF_KEY"))
 
       messages = [{"role": "user", "content": m[1]}
                   if m[0] == 0
