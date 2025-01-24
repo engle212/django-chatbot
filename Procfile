@@ -1,1 +1,1 @@
-web: python -m gunicorn chatbot.wsgi:chatapp
+web: python -m gunicorn --env DJANGO_SETTINGS_MODULE=chatbot.settings chatbot.wsgi:chatapp
