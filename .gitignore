@@ -1,5 +1,4 @@
 pyenv/
-chatbot/chatapp/data/
 api_key.yaml
 .env
 chatbot/staticfiles/
