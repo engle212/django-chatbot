@@ -11,7 +11,6 @@ import yaml
 import os
 import markdown
 from huggingface_hub import InferenceClient
-from decouple import config
 
 def index(request):
   """
@@ -140,7 +139,7 @@ def update_convo_summary(user_id, convo_id):
   
   if len(convo) >= 2:
     with open(filename, "w") as file:
-      client = InferenceClient(api_key=config("HF_KEY"))
+      client = InferenceClient(api_key=os.environ.get("HF_KEY"))
 
       messages = [{"role": "user", "content": m[1]}
                   if m[0] == 0
