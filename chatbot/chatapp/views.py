@@ -356,20 +356,9 @@ def get_reply(user_id, convo_id):
   string
     The output of the LLM based on the latest input message.
   """
-  # Authenticate
-  data = []
-  with open(os.path.join(settings.BASE_DIR, 
-                         "chatapp\\data\\api_key.yaml")) as file:
-    data = yaml.safe_load(file)
-
-  key = ""
-  if len(data) > 0:
-    key = data["key"]
-  else:
-    return "API key must be supplied."
 
   print("Getting response...")
-  client = InferenceClient(api_key=key)
+  client = InferenceClient(api_key=os.environ.get("HF_KEY"))
 
   convo = get_conversation(user_id, convo_id)
   messages = [{"role": "user", "content": "Write an introduction before your response. " + m[1] }
