@@ -1,9 +1,9 @@
 name: Django CI
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "deploy" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "deploy" ]
 jobs:
   build:
     runs-on: ubuntu-latest
