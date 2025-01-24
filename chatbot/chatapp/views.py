@@ -22,6 +22,8 @@ def index(request):
     The content to be displayed to the user. Passes in a context and 
     request object to a template.
   """
+  if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
+    os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
   template = loader.get_template("chatapp/index.html")
   # Create session
   if not request.session.session_key:
