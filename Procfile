@@ -1,1 +1,1 @@
-web: python -m gunicorn --env DJANGO_SETTINGS_MODULE=chatbot.chatbot.settings chatbot.wsgi
+web: python -m gunicorn --env DJANGO_SETTINGS_MODULE=chatbot.chatbot.settings chatbot.chatbot.wsgi
