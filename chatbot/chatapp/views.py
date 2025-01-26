@@ -257,10 +257,17 @@ def get_all_conversations(user_id):
   """
   #data_files = os.listdir(os.path.join(settings.BASE_DIR,
   #                                     "chatapp\\data"))
-  s3_client = boto3.client("s3")
-  objects = s3_client.list_objects_v2(Bucket="django-chatbot-data")["Contents"]
-  filtered = [f["Key"] for f in objects if user_id in f["Key"]]
+  #s3_resource = boto3.resource('s3')
+  #bucket = s3_resource.Bucket("django-chatbot-data")
+  #files = [f.name for f in bucket.objects.all()]
 
+  s3_resource = boto3.resource('s3')
+  objects = s3_resource.Bucket("django-chatbot-data").objects.all()
+
+  if len(list(objects)):
+    filtered = [f.key for f in objects if user_id in f.key]
+  else:
+    filtered = []
   #s3 = boto3.resource("s3")
   #bucket = s3.Bucket("django-chatbot-data")
   #filtered = [f.key for f in bucket.objects.all()]
