@@ -172,7 +172,6 @@ def update_convo_summary(user_id, convo_id):
 
     is_successful = True
   else:
-    #with open(filename, "w") as file:
     convo_dict = {
       "messages": convo,
       "summary": "A new conversation"
