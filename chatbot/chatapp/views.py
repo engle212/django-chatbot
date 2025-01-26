@@ -11,6 +11,8 @@ import yaml
 import os
 import markdown
 from huggingface_hub import InferenceClient
+import boto3
+from io import BytesIO
 
 def index(request):
   """
@@ -24,6 +26,7 @@ def index(request):
   """
   if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
     os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
+
   template = loader.get_template("chatapp/index.html")
   # Create session
   if not request.session.session_key:
@@ -69,10 +72,11 @@ def index(request):
                   False,
                   ai_message)
 
-  all_sums = [get_summary(os.path.join(settings.BASE_DIR, "chatapp\\data\\" + c)) for c in all_convos]
+  all_sums = [get_summary(c) for c in all_convos]
   all_convo_ids = [get_convo_id(c) for c in all_convos]
-  convo_list = zip(all_convo_ids, all_convos, all_sums)
+  convo_list = list(zip(all_convo_ids, all_convos, all_sums))
   context["convos"] = convo_list
+  print(all_convos)
 
   update_convo_summary(session_key, convo_id)
   return HttpResponse(template.render(context, request))
@@ -115,8 +119,12 @@ def get_summary(filename):
     The summary of the conversation.
   """
   summary = ""
-  with open(filename, "r") as infile:
-    summary = json.load(infile)["summary"]
+  #with open(filename, "r") as infile:
+  #  summary = json.load(infile)["summary"]
+
+  convo = read_from_s3(filename)
+  summary = convo["summary"]
+  
   return summary
 
 def update_convo_summary(user_id, convo_id):
@@ -140,45 +148,70 @@ def update_convo_summary(user_id, convo_id):
   convo = get_conversation(user_id, convo_id)
   
   if len(convo) >= 2:
-    with open(filename, "w") as file:
-      client = InferenceClient(api_key=os.environ.get("HF_KEY"))
+    #with open(filename, "w") as file:
+    client = InferenceClient(api_key=os.environ.get("HF_KEY"))
 
-      messages = [{"role": "user", "content": m[1]}
-                  if m[0] == 0
-                  else {"role": "assistant", "content": m[1]}
-                  for m in convo]
+    messages = [{"role": "user", "content": m[1]}
+                if m[0] == 0
+                else {"role": "assistant", "content": m[1]}
+                for m in convo]
 
-      messages.append({"role": "user", "content": "Give this conversation a descriptive, 5-word title with no emojis"})
+    messages.append({"role": "user", "content": "Give this conversation a descriptive, 5-word title with no emojis"})
 
-      stream = client.chat.completions.create(model="google/gemma-2-9b-it",
-                                              messages=messages,
-                                              temperature=0.5,
-                                              max_tokens=1024,
-                                              top_p=0.7,
-                                              stream=True)
-      reply = ""
-      for chunk in stream:
-        reply = reply + str(chunk.choices[0].delta.content)
+    stream = client.chat.completions.create(model="google/gemma-2-9b-it",
+                                            messages=messages,
+                                            temperature=0.5,
+                                            max_tokens=1024,
+                                            top_p=0.7,
+                                            stream=True)
+    reply = ""
+    for chunk in stream:
+      reply = reply + str(chunk.choices[0].delta.content)
 
-      convo_dict = {
-        "messages": convo,
-        "summary": reply
-      }
-      # Save dictionary to file
-      json.dump(convo_dict, file)
+    convo_dict = {
+      "messages": convo,
+      "summary": reply
+    }
+    # Save dictionary to s3
+    save_to_s3(convo_dict, filename)
 
-      is_successful = True
+    is_successful = True
   else:
-    with open(filename, "w") as file:
-      convo_dict = {
-        "messages": convo,
-        "summary": "A new conversation"
-      }
-      # Save dictionary to file
-      json.dump(convo_dict, file)
+    #with open(filename, "w") as file:
+    convo_dict = {
+      "messages": convo,
+      "summary": "A new conversation"
+    }
+    # Save dictionary to s3
+    #json.dump(convo_dict, file)
 
-      is_successful = True
+    save_to_s3(convo_dict, filename)
+
+    is_successful = True
   return is_successful
+
+def save_to_s3(convo_dict, filename):
+  s3_client = boto3.client("s3")
+  s3_client.put_object(
+    Bucket="django-chatbot-data",
+    Key=filename,
+    Body=bytes(json.dumps(convo_dict).encode("UTF-8"))
+  )
+
+  s3 = boto3.resource("s3")
+  s3_object = s3.Object("django-chatbot-data", filename)
+  s3_object.put(Body=bytes(json.dumps(convo_dict).encode("UTF-8")))
+  return
+
+def read_from_s3(filename):
+  print("READING")
+  print(filename)
+  session = boto3.Session()
+  s3 = session.client("s3")
+  f = BytesIO()
+  s3.download_fileobj("django-chatbot-data", filename, f)
+  content = json.loads(f.getvalue())
+  return content
 
 def create_conversation(user_id):
   """
@@ -201,8 +234,10 @@ def create_conversation(user_id):
   }
   filename = gen_filename(user_id, str(len(convo_files)+1))
 
-  with open(filename, "w") as outfile:
-    json.dump(convo, outfile)
+  #with open(filename, "w") as outfile:
+  #  json.dump(convo, outfile)
+
+  save_to_s3(convo, filename)
   
   return str(filename)
 
@@ -220,9 +255,19 @@ def get_all_conversations(user_id):
   list
     The conversation file names associated with the user_id.
   """
-  data_files = os.listdir(os.path.join(settings.BASE_DIR,
-                                       "chatapp\\data"))
-  filtered = [f for f in data_files if user_id in f]
+  #data_files = os.listdir(os.path.join(settings.BASE_DIR,
+  #                                     "chatapp\\data"))
+  s3_client = boto3.client("s3")
+  objects = s3_client.list_objects_v2(Bucket="django-chatbot-data")["Contents"]
+  filtered = [f["Key"] for f in objects if user_id in f["Key"]]
+
+  #s3 = boto3.resource("s3")
+  #bucket = s3.Bucket("django-chatbot-data")
+  #filtered = [f.key for f in bucket.objects.all()]
+  #filtered = [f for f in data_files if user_id in f]
+
+  #data_files = list(boto3.resource("s3").buckets.all())
+  #filtered = [f.name for f in data_files if user_id in f.name]
   return list(filtered)
 
 def get_most_recent_conversation(user_id):
@@ -289,8 +334,10 @@ def get_conversation(user_id, convo_id):
   """
   filename = gen_filename(user_id, convo_id)
   messages = []
-  with open(filename, "r") as infile:
-    messages = json.load(infile)
+  #with open(filename, "r") as infile:
+  #  messages = json.load(infile)
+
+  messages = read_from_s3(filename)
   return list(messages["messages"])
 
 def update_conversation(user_id, convo_id, new_data):
@@ -316,10 +363,13 @@ def update_conversation(user_id, convo_id, new_data):
   is_successful = False
   filename = gen_filename(user_id, convo_id)
   
-  with open(filename, "w") as outfile:
-    json.dump(new_data, outfile)
-    is_successful = True
+  #with open(filename, "w") as outfile:
+  #  json.dump(new_data, outfile)
+  #  is_successful = True
 
+  save_to_s3(new_data, filename)
+  is_successful = True
+  
   return is_successful
 
 def gen_filename(user_id, convo_id):
