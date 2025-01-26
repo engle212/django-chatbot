@@ -119,12 +119,8 @@ def get_summary(filename):
     The summary of the conversation.
   """
   summary = ""
-  #with open(filename, "r") as infile:
-  #  summary = json.load(infile)["summary"]
-
   convo = read_from_s3(filename)
   summary = convo["summary"]
-  
   return summary
 
 def update_convo_summary(user_id, convo_id):
@@ -172,7 +168,6 @@ def update_convo_summary(user_id, convo_id):
       "messages": convo,
       "summary": reply
     }
-    # Save dictionary to s3
     save_to_s3(convo_dict, filename)
 
     is_successful = True
@@ -182,8 +177,6 @@ def update_convo_summary(user_id, convo_id):
       "messages": convo,
       "summary": "A new conversation"
     }
-    # Save dictionary to s3
-    #json.dump(convo_dict, file)
 
     save_to_s3(convo_dict, filename)
 
@@ -255,12 +248,6 @@ def get_all_conversations(user_id):
   list
     The conversation file names associated with the user_id.
   """
-  #data_files = os.listdir(os.path.join(settings.BASE_DIR,
-  #                                     "chatapp\\data"))
-  #s3_resource = boto3.resource('s3')
-  #bucket = s3_resource.Bucket("django-chatbot-data")
-  #files = [f.name for f in bucket.objects.all()]
-
   s3_resource = boto3.resource('s3')
   objects = s3_resource.Bucket("django-chatbot-data").objects.all()
 
@@ -268,13 +255,7 @@ def get_all_conversations(user_id):
     filtered = [f.key for f in objects if user_id in f.key]
   else:
     filtered = []
-  #s3 = boto3.resource("s3")
-  #bucket = s3.Bucket("django-chatbot-data")
-  #filtered = [f.key for f in bucket.objects.all()]
-  #filtered = [f for f in data_files if user_id in f]
 
-  #data_files = list(boto3.resource("s3").buckets.all())
-  #filtered = [f.name for f in data_files if user_id in f.name]
   return list(filtered)
 
 def get_most_recent_conversation(user_id):
@@ -340,10 +321,6 @@ def get_conversation(user_id, convo_id):
     The messages from the specified conversation.
   """
   filename = gen_filename(user_id, convo_id)
-  messages = []
-  #with open(filename, "r") as infile:
-  #  messages = json.load(infile)
-
   messages = read_from_s3(filename)
   return list(messages["messages"])
 
@@ -369,14 +346,8 @@ def update_conversation(user_id, convo_id, new_data):
   """
   is_successful = False
   filename = gen_filename(user_id, convo_id)
-  
-  #with open(filename, "w") as outfile:
-  #  json.dump(new_data, outfile)
-  #  is_successful = True
-
   save_to_s3(new_data, filename)
   is_successful = True
-  
   return is_successful
 
 def gen_filename(user_id, convo_id):
