@@ -6,6 +6,8 @@ from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.template import loader
 from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
 import json
 import yaml
 import os
@@ -13,6 +15,103 @@ import markdown
 from huggingface_hub import InferenceClient
 import boto3
 from io import BytesIO
+
+class ReactView(APIView):
+  def get(self, request):
+    #if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
+    #  os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
+
+    template = loader.get_template("chatapp/index.html")
+    # Create session
+    if not request.session.session_key:
+      request.session.create()
+    session_key = request.session.session_key
+    request.session['name'] = 'django-chatbot'
+    session_key = request.session.session_key
+
+    convo_id = ""
+    if "active_convo" in request.session:
+      convo_id = request.session["active_convo"]
+      messages = get_conversation(session_key, convo_id)
+      filename = gen_filename(session_key, convo_id)
+    else:
+      filename, messages = get_most_recent_conversation(session_key)
+      convo_id = get_convo_id(filename)
+      request.session["active_convo"] = convo_id
+
+    all_convos = get_all_conversations(session_key)
+      
+    context = {
+      "title": "django-chatbot",
+      "convo_id": convo_id,
+      "messages": messages,
+      "convos": []
+    }
+
+    all_sums = [get_summary(c) for c in all_convos]
+    all_convo_ids = [get_convo_id(c) for c in all_convos]
+    convo_list = list(zip(all_convo_ids, all_convos, all_sums))
+    context["convos"] = convo_list
+    print(all_convos)
+
+    update_convo_summary(session_key, convo_id)
+    return Response(data=context)
+  def post(self, request):
+    #if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
+    #  os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
+
+    template = loader.get_template("chatapp/index.html")
+    # Create session
+    if not request.session.session_key:
+      request.session.create()
+    session_key = request.session.session_key
+    request.session['name'] = 'django-chatbot'
+    session_key = request.session.session_key
+
+    convo_id = ""
+    if "active_convo" in request.session:
+      convo_id = request.session["active_convo"]
+      messages = get_conversation(session_key, convo_id)
+      filename = gen_filename(session_key, convo_id)
+    else:
+      filename, messages = get_most_recent_conversation(session_key)
+      convo_id = get_convo_id(filename)
+      request.session["active_convo"] = convo_id
+
+    all_convos = get_all_conversations(session_key)
+      
+    context = {
+      "title": "django-chatbot",
+      "convo_id": convo_id,
+      "messages": messages,
+      "convos": []
+    }
+
+    user_message = request.data["text"]
+    # Reflect new message in view
+    context["messages"].append([0, user_message])
+    # Store user message in S3 bucket
+    store_message(session_key,
+                  convo_id,
+                  True,
+                  user_message)
+    # Get LLM's reply
+    ai_message = get_reply(session_key, convo_id)
+    context["messages"].append([1, ai_message])
+    # Store LLM message in S3 bucket
+    store_message(session_key,
+                  convo_id,
+                  False,
+                  ai_message)
+
+    all_sums = [get_summary(c) for c in all_convos]
+    all_convo_ids = [get_convo_id(c) for c in all_convos]
+    convo_list = list(zip(all_convo_ids, all_convos, all_sums))
+    context["convos"] = convo_list
+    print(all_convos)
+
+    update_convo_summary(session_key, convo_id)
+    return Response(data=context)
 
 def index(request):
   """

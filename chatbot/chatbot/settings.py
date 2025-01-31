@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("ENVIRONMENT") == "development"
+DEBUG = True #os.environ.get("ENVIRONMENT") == "development"
 
 IS_HEROKU_APP = "DYNO" in os.environ and "CI" not in os.environ
 
@@ -63,9 +63,12 @@ INSTALLED_APPS = [
     #'django.contrib.messages',
     'django.contrib.staticfiles',
     'chatapp.apps.ChatappConfig',
+    'rest_framework',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -75,6 +78,15 @@ MIDDLEWARE = [
     #'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+  'DEFAULT_PERMISSION_CLASSES': [
+    'rest_framework.permissions.AllowAny'
+  ]
+}
 
 ROOT_URLCONF = 'chatbot.urls'
 
