@@ -14,6 +14,7 @@ import os
 import markdown
 from huggingface_hub import InferenceClient
 import boto3
+from boto3.dynamodb.conditions import Key, Attr
 from io import BytesIO
 
 class ReactView(APIView):
@@ -33,10 +34,10 @@ class ReactView(APIView):
     if "active_convo" in request.session:
       convo_id = request.session["active_convo"]
       messages = get_conversation(session_key, convo_id)
-      filename = gen_filename(session_key, convo_id)
+      #filename = gen_filename(session_key, convo_id)
     else:
-      filename, messages = get_most_recent_conversation(session_key)
-      convo_id = get_convo_id(filename)
+      convo_id, messages = get_most_recent_conversation(session_key)
+      #convo_id = get_convo_id(filename)
       request.session["active_convo"] = convo_id
 
     all_convos = get_all_conversations(session_key)
@@ -48,8 +49,8 @@ class ReactView(APIView):
       "convos": []
     }
 
-    all_sums = [get_summary(c) for c in all_convos]
-    all_convo_ids = [get_convo_id(c) for c in all_convos]
+    all_sums = [get_summary(session_key, c) for c in all_convos]
+    all_convo_ids = all_convos # TODO: remove
     convo_list = list(zip(all_convo_ids, all_convos, all_sums))
     context["convos"] = convo_list
     print(all_convos)
@@ -72,10 +73,10 @@ class ReactView(APIView):
     if "active_convo" in request.session:
       convo_id = request.session["active_convo"]
       messages = get_conversation(session_key, convo_id)
-      filename = gen_filename(session_key, convo_id)
+      #filename = gen_filename(session_key, convo_id)
     else:
-      filename, messages = get_most_recent_conversation(session_key)
-      convo_id = get_convo_id(filename)
+      convo_id, messages = get_most_recent_conversation(session_key)
+      #convo_id = get_convo_id(filename)
       request.session["active_convo"] = convo_id
 
     all_convos = get_all_conversations(session_key)
@@ -104,8 +105,8 @@ class ReactView(APIView):
                   False,
                   ai_message)
 
-    all_sums = [get_summary(c) for c in all_convos]
-    all_convo_ids = [get_convo_id(c) for c in all_convos]
+    all_sums = [get_summary(session_key, c) for c in all_convos]
+    all_convo_ids = all_convos # TODO: remove
     convo_list = list(zip(all_convo_ids, all_convos, all_sums))
     context["convos"] = convo_list
     print(all_convos)
@@ -136,12 +137,12 @@ def index(request):
   
   convo_id = ""
   if "active_convo" in request.session:
-    convo_id = request.session["active_convo"]
+    convo_id = str(request.session["active_convo"])
     messages = get_conversation(session_key, convo_id)
-    filename = gen_filename(session_key, convo_id)
+    #filename = gen_filename(session_key, convo_id)
   else:
-    filename, messages = get_most_recent_conversation(session_key)
-    convo_id = get_convo_id(filename)
+    convo_id, messages = get_most_recent_conversation(session_key)
+    #convo_id = get_convo_id(filename)
     request.session["active_convo"] = convo_id
 
   all_convos = get_all_conversations(session_key)
@@ -171,8 +172,8 @@ def index(request):
                   False,
                   ai_message)
 
-  all_sums = [get_summary(c) for c in all_convos]
-  all_convo_ids = [get_convo_id(c) for c in all_convos]
+  all_sums = [get_summary(session_key, c) for c in all_convos]
+  all_convo_ids = all_convos # TODO: remove
   convo_list = list(zip(all_convo_ids, all_convos, all_sums))
   context["convos"] = convo_list
   print(all_convos)
@@ -189,7 +190,7 @@ def new_convo_button(request):
   HttpResponseRedirect
     A redirect to the index page (page reload).
   """
-  filename = create_conversation(request.session.session_key)
+  convo_id = create_conversation(request.session.session_key)
   return redirect('index')
 
 def switch_convo_button(request, convo_id):
@@ -204,23 +205,26 @@ def switch_convo_button(request, convo_id):
   request.session['active_convo'] = convo_id
   return redirect('index')
 
-def get_summary(filename):
+def get_summary(user_id, convo_id):
   """
   Get the summary in a specified conversation file.
 
   Parameters
   ----------
-  filename : string
-    The path to the file of the conversation whose summary is requested.
+  user_id : string
+    The ID of the user who owns the specified conversation.
+  convo_id : string
+    The ID of the specified conversation.
+
   Returns
   -------
   string
     The summary of the conversation.
   """
-  summary = ""
-  convo = read_from_s3(filename)
-  summary = convo["summary"]
-  return summary
+  #convo = read_from_s3(filename)
+  #summary = convo["summary"]
+  convo = read_from_dynamo(user_id, convo_id)
+  return convo["summary"]
 
 def update_convo_summary(user_id, convo_id):
   """
@@ -239,7 +243,7 @@ def update_convo_summary(user_id, convo_id):
     Indicates whether the summary could be successfully updated.
   """
   is_successful = False
-  filename = gen_filename(user_id, convo_id)
+  #filename = gen_filename(user_id, convo_id)
   convo = get_conversation(user_id, convo_id)
   
   if len(convo) >= 2:
@@ -267,7 +271,8 @@ def update_convo_summary(user_id, convo_id):
       "messages": convo,
       "summary": reply
     }
-    save_to_s3(convo_dict, filename)
+    #save_to_s3(convo_dict, filename)
+    update_to_dynamo(user_id, convo_id, convo_dict)
 
     is_successful = True
   else:
@@ -276,7 +281,8 @@ def update_convo_summary(user_id, convo_id):
       "summary": "A new conversation"
     }
 
-    save_to_s3(convo_dict, filename)
+    #save_to_s3(convo_dict, filename)
+    update_to_dynamo(user_id, convo_id, convo_dict)
 
     is_successful = True
   return is_successful
@@ -304,6 +310,49 @@ def read_from_s3(filename):
   content = json.loads(f.getvalue())
   return content
 
+def add_to_dynamo(convo_dict, user_id, convo_id):
+  # Put an item in the table
+  dynamodb = boto3.resource("dynamodb")
+  table = dynamodb.Table("django-chatbot-table")
+  table.put_item(
+    Item={
+      "user_id": user_id,
+      "convo_id": convo_id,
+      "messages": convo_dict["messages"],
+      "summary": convo_dict["summary"],
+    }
+  )
+  return
+
+def update_to_dynamo(user_id, convo_id, new_data):
+  # Modify an existing item
+  dynamodb = boto3.resource("dynamodb")
+  table = dynamodb.Table("django-chatbot-table")
+  response = table.update_item(
+    Key={
+      "user_id": user_id,
+      "convo_id": convo_id,
+    },
+    UpdateExpression="SET messages = :val1, summary = :val2",
+    ExpressionAttributeValues={
+      ":val1": new_data["messages"],
+      ":val2": new_data["summary"]
+    }
+  )
+  return
+
+def read_from_dynamo(user_id, convo_id):
+  # Find and return an item as a dictionary
+  dynamodb = boto3.resource("dynamodb")
+  table = dynamodb.Table("django-chatbot-table")
+  response = table.get_item(
+    Key={
+      "user_id": user_id,
+      "convo_id": convo_id,
+    }
+  )
+  return response["Item"]
+
 def create_conversation(user_id):
   """
   Create a new conversation file for the specified user.
@@ -316,21 +365,19 @@ def create_conversation(user_id):
   Returns
   -------
   string
-    The name of the file created.
+    The ID of the newly-created conversation.
   """
-  convo_files = get_all_conversations(user_id)
+  convo_id_list = get_all_conversations(user_id)
   convo = {
     "messages": [],
     "summary": "A new conversation"
   }
-  filename = gen_filename(user_id, str(len(convo_files)+1))
-
-  #with open(filename, "w") as outfile:
-  #  json.dump(convo, outfile)
-
-  save_to_s3(convo, filename)
+  convo_id = str(len(convo_id_list)+1)
+  add_to_dynamo(convo, user_id, convo_id)
+  #filename = gen_filename(user_id, convo_id)
+  #save_to_s3(convo, filename)
   
-  return str(filename)
+  return convo_id
 
 def get_all_conversations(user_id):
   """
@@ -344,17 +391,30 @@ def get_all_conversations(user_id):
   Returns
   -------
   list
-    The conversation file names associated with the user_id.
+    The convo_id's associated with the user_id.
   """
-  s3_resource = boto3.resource('s3')
-  objects = s3_resource.Bucket("django-chatbot-data").objects.all()
+  #s3_resource = boto3.resource('s3')
+  #objects = s3_resource.Bucket("django-chatbot-data").objects.all()
 
-  if len(list(objects)):
-    filtered = [f.key for f in objects if user_id in f.key]
-  else:
-    filtered = []
+  #if len(list(objects)):
+  #  filtered = [f.key for f in objects if user_id in f.key]
+  #else:
+  #  filtered = []
+  dynamodb = boto3.resource("dynamodb")
+  table = dynamodb.Table("django-chatbot-table")
 
-  return list(filtered)
+  response = table.query(
+    KeyConditionExpression=Key("user_id").eq(user_id)
+  )
+
+  items = response["Items"]
+  
+  ids = []
+
+  if len(items) > 0:
+    ids = [i["convo_id"] for i in items]
+
+  return list(ids)
 
 def get_most_recent_conversation(user_id):
   """
@@ -368,22 +428,23 @@ def get_most_recent_conversation(user_id):
   Returns
   -------
   string
-    The name of the user's most-recently created conversation file.
+    The ID of the user's most-recently created conversation.
   list
     The messages from the user's most-recently created conversation.
   """
   messages = []
-  filename = ""
+  convo_id = ""
+  #filename = ""
   all_convos = get_all_conversations(user_id)
   if len(all_convos) > 0:
-    all_convos.sort(key=get_convo_id)
+    all_convos.sort(key=int)
     convo_id = get_convo_id(all_convos[-1])
-    filename = gen_filename(user_id, convo_id)
+    #filename = gen_filename(user_id, convo_id)
     messages = get_conversation(user_id, convo_id)
   else:
-    filename = create_conversation(user_id)
-    messages = get_conversation(user_id, get_convo_id(filename))
-  return str(filename), list(messages)
+    convo_id = create_conversation(user_id)
+    messages = get_conversation(user_id, convo_id)
+  return convo_id, list(messages)
 
 def get_convo_id(filename):
   """
@@ -396,7 +457,7 @@ def get_convo_id(filename):
 
   Returns
   -------
-  int
+  string
     ID of the conversation associated with filename.
   """
   num_str = os.path.splitext(filename)[0].split("_")[-1]
@@ -418,9 +479,11 @@ def get_conversation(user_id, convo_id):
   list
     The messages from the specified conversation.
   """
-  filename = gen_filename(user_id, convo_id)
-  messages = read_from_s3(filename)
-  return list(messages["messages"])
+  #filename = gen_filename(user_id, convo_id)
+  #messages = read_from_s3(filename)
+  item = read_from_dynamo(user_id, convo_id)
+
+  return list(item["messages"])
 
 def update_conversation(user_id, convo_id, new_data):
   """
@@ -443,8 +506,9 @@ def update_conversation(user_id, convo_id, new_data):
 
   """
   is_successful = False
-  filename = gen_filename(user_id, convo_id)
-  save_to_s3(new_data, filename)
+  #filename = gen_filename(user_id, convo_id)
+  #save_to_s3(new_data, filename)
+  update_to_dynamo(user_id, convo_id, new_data)
   is_successful = True
   return is_successful
 
@@ -534,10 +598,13 @@ def store_message(user_id, convo_id, is_user, message):
   """
   is_successful = False
   messages = get_conversation(user_id, convo_id)
-  summary = get_summary(gen_filename(user_id, convo_id))
+  summary = get_summary(user_id, convo_id)
   messages.append([(not is_user) * 1, message])
   is_successful = update_conversation(user_id,
                                       convo_id,
-                                      {"messages": messages, "summary": summary})
+                                      {
+                                        "messages": messages, 
+                                        "summary": summary
+                                      })
 
   return is_successful
