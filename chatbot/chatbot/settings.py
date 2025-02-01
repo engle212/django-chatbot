@@ -85,7 +85,11 @@ CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
   'DEFAULT_PERMISSION_CLASSES': [
     'rest_framework.permissions.AllowAny'
-  ]
+  ],
+  'DEFAULT_AUTHENTICATION_CLASSES': (
+      'rest_framework.authentication.SessionAuthentication',  # Enables session auth
+      'rest_framework.authentication.BasicAuthentication',
+  )
 }
 
 ROOT_URLCONF = 'chatbot.urls'

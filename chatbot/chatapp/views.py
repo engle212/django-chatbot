@@ -21,14 +21,14 @@ class ReactView(APIView):
   def get(self, request):
     template = loader.get_template("chatapp/index.html")
     # Create session
-    if not request.session.session_key:
-      request.session.create()
-    session_key = request.session.session_key
+    #if not request.session.session_key:
+    #  request.session.create()
+    session_key = request.COOKIES.get("key")
     request.session['name'] = 'django-chatbot'
-    session_key = request.session.session_key
+    #session_key = request.session.session_key
 
     convo_id = ""
-    if "active_convo" in request.session:
+    if "active_convo" in request.COOKIES:
       convo_id = request.session["active_convo"]
       messages = get_conversation(session_key, convo_id)
     else:
@@ -291,8 +291,8 @@ def update_to_dynamo(user_id, convo_id, new_data):
   table = dynamodb.Table("django-chatbot-table")
   response = table.update_item(
     Key={
-      "user_id": user_id,
-      "convo_id": convo_id,
+      "user_id": str(user_id),
+      "convo_id": str(convo_id),
     },
     UpdateExpression="SET messages = :val1, summary = :val2",
     ExpressionAttributeValues={
@@ -308,8 +308,8 @@ def read_from_dynamo(user_id, convo_id):
   table = dynamodb.Table("django-chatbot-table")
   response = table.get_item(
     Key={
-      "user_id": user_id,
-      "convo_id": convo_id,
+      "user_id": str(user_id),
+      "convo_id": str(convo_id),
     }
   )
   return response["Item"]
@@ -429,7 +429,7 @@ def get_conversation(user_id, convo_id):
   list
     The messages from the specified conversation.
   """
-  item = read_from_dynamo(user_id, convo_id)
+  item = read_from_dynamo(str(user_id), str(convo_id))
 
   return list(item["messages"])
 

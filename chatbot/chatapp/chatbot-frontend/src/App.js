@@ -190,9 +190,17 @@ export function App() {
   const [text, setText] = useState({"text": "hey"});
   const [loading, setLoading] = useState(true);
 
+  console.log(document.cookie)
+  var cookieValue = document.cookie.split("; ").find((row) => row.startsWith("key="))?.split("=")[1];
+
+  if (cookieValue != undefined || cookieValue == "None") {
+    // Create a cookie
+    let randStr = (Math.random() + 1).toString(36);
+    document.cookie = "key=" + randStr;
+  }
+
   useEffect(() => {
-    axios
-      .get(API_URL)
+    axios.get(API_URL)
       .then((response) => {
         setContext(response.data);
         setLoading(false);
