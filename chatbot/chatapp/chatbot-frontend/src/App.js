@@ -80,10 +80,10 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
-  justifyContent: 'flex-end',
+  justifyContent: 'space-between',
 }));
 
-function PersistentDrawerLeft({context, submitHandler, changeHandler}) {
+function PersistentDrawerLeft({context, submitHandler, changeHandler, newHandler}) {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
 
@@ -131,7 +131,9 @@ function PersistentDrawerLeft({context, submitHandler, changeHandler}) {
         anchor="left"
         open={open}>
         <DrawerHeader>
-          
+          <Button onClick={newHandler} variant="outlined">
+            New
+          </Button>
           <Button onClick={handleDrawerClose} variant="text">
             Conversations
             {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
@@ -217,10 +219,21 @@ export function App() {
       });
   };
 
+  const handleNew = (event) => {
+    event.preventDefault();
+    axios.get(API_URL + "new/")
+      .then((response) => {
+        window.location.href = response.data.redirect;
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
-    <PersistentDrawerLeft context={context} submitHandler={handleSubmit} changeHandler={handleChange}/>
+    <PersistentDrawerLeft context={context} submitHandler={handleSubmit} changeHandler={handleChange} newHandler={handleNew}/>
     /*<div>
       {/* Use Persistent drawer for sidebar }
       <h1>{context.title}</h1>

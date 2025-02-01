@@ -102,6 +102,12 @@ class ReactView(APIView):
     update_convo_summary(session_key, convo_id)
     return Response(data=context)
 
+class NewView(APIView):
+  def get(self, request):
+    convo_id = create_conversation(request.session.session_key)
+    return Response(data={"redirect": "/chat"})
+
+
 def index(request):
   """
   Renders the main index page.
@@ -271,8 +277,8 @@ def add_to_dynamo(convo_dict, user_id, convo_id):
   table = dynamodb.Table("django-chatbot-table")
   table.put_item(
     Item={
-      "user_id": user_id,
-      "convo_id": convo_id,
+      "user_id": str(user_id),
+      "convo_id": str(convo_id),
       "messages": convo_dict["messages"],
       "summary": convo_dict["summary"],
     }
@@ -350,7 +356,7 @@ def get_all_conversations(user_id):
   table = dynamodb.Table("django-chatbot-table")
 
   response = table.query(
-    KeyConditionExpression=Key("user_id").eq(user_id)
+    KeyConditionExpression=Key("user_id").eq(str(user_id))
   )
 
   items = response["Items"]
@@ -380,12 +386,10 @@ def get_most_recent_conversation(user_id):
   """
   messages = []
   convo_id = ""
-  #filename = ""
   all_convos = get_all_conversations(user_id)
   if len(all_convos) > 0:
     all_convos.sort(key=int)
     convo_id = get_convo_id(all_convos[-1])
-    #filename = gen_filename(user_id, convo_id)
     messages = get_conversation(user_id, convo_id)
   else:
     convo_id = create_conversation(user_id)
