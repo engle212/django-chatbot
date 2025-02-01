@@ -25,7 +25,7 @@
             <div class="w-100" style="height: 5vh;"></div>
             <button class="btn btn-light text-start rounded my-1 w-100" id="newConvo" style="height: 8vh" type="submit" data-url="{% url 'new_convo_button' %}">New Conversation</button>
 
-            {% for i, f, s in convos %}
+            {% for i, s in convos %}
               <button class="border btn my-1 w-100 btn-dark rounded text-start convo" style="height: min-content" type="submit" data-url="{% url 'switch_convo_button' i %}">{{ s }}</button>
             {% endfor %}
           </div>

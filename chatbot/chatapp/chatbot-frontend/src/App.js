@@ -142,7 +142,7 @@ function PersistentDrawerLeft({context, submitHandler, changeHandler}) {
           {context.convos.map((convo, idx) => (
             <ListItem key={idx} id={convo[0]} disablePadding>
               <ListItemButton href={BASE_URL + "/swap/" + convo[0]}>
-                <ListItemText primary={convo[2]}/>
+                <ListItemText primary={convo[1]}/>
               </ListItemButton>
             </ListItem>
           ))}
@@ -207,7 +207,6 @@ export function App() {
   };
 
   const handleSubmit = (event) => {
-    console.log(text);
     event.preventDefault();
     axios.post(API_URL, text)
       .then((response) => {

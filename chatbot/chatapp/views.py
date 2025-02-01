@@ -19,9 +19,6 @@ from io import BytesIO
 
 class ReactView(APIView):
   def get(self, request):
-    #if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
-    #  os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
-
     template = loader.get_template("chatapp/index.html")
     # Create session
     if not request.session.session_key:
@@ -34,10 +31,8 @@ class ReactView(APIView):
     if "active_convo" in request.session:
       convo_id = request.session["active_convo"]
       messages = get_conversation(session_key, convo_id)
-      #filename = gen_filename(session_key, convo_id)
     else:
       convo_id, messages = get_most_recent_conversation(session_key)
-      #convo_id = get_convo_id(filename)
       request.session["active_convo"] = convo_id
 
     all_convos = get_all_conversations(session_key)
@@ -50,17 +45,13 @@ class ReactView(APIView):
     }
 
     all_sums = [get_summary(session_key, c) for c in all_convos]
-    all_convo_ids = all_convos # TODO: remove
-    convo_list = list(zip(all_convo_ids, all_convos, all_sums))
+    convo_list = list(zip(all_convos, all_sums))
     context["convos"] = convo_list
     print(all_convos)
 
     update_convo_summary(session_key, convo_id)
     return Response(data=context)
   def post(self, request):
-    #if not os.path.isdir(os.path.join(settings.BASE_DIR, "chatapp\\data")):
-    #  os.mkdir(os.path.join(settings.BASE_DIR, "chatapp\\data"))
-
     template = loader.get_template("chatapp/index.html")
     # Create session
     if not request.session.session_key:
@@ -73,10 +64,8 @@ class ReactView(APIView):
     if "active_convo" in request.session:
       convo_id = request.session["active_convo"]
       messages = get_conversation(session_key, convo_id)
-      #filename = gen_filename(session_key, convo_id)
     else:
       convo_id, messages = get_most_recent_conversation(session_key)
-      #convo_id = get_convo_id(filename)
       request.session["active_convo"] = convo_id
 
     all_convos = get_all_conversations(session_key)
@@ -91,7 +80,7 @@ class ReactView(APIView):
     user_message = request.data["text"]
     # Reflect new message in view
     context["messages"].append([0, user_message])
-    # Store user message in S3 bucket
+    # Store user message in conversation
     store_message(session_key,
                   convo_id,
                   True,
@@ -99,15 +88,14 @@ class ReactView(APIView):
     # Get LLM's reply
     ai_message = get_reply(session_key, convo_id)
     context["messages"].append([1, ai_message])
-    # Store LLM message in S3 bucket
+    # Store LLM message in conversation
     store_message(session_key,
                   convo_id,
                   False,
                   ai_message)
 
     all_sums = [get_summary(session_key, c) for c in all_convos]
-    all_convo_ids = all_convos # TODO: remove
-    convo_list = list(zip(all_convo_ids, all_convos, all_sums))
+    convo_list = list(zip(all_convos, all_sums))
     context["convos"] = convo_list
     print(all_convos)
 
@@ -139,10 +127,8 @@ def index(request):
   if "active_convo" in request.session:
     convo_id = str(request.session["active_convo"])
     messages = get_conversation(session_key, convo_id)
-    #filename = gen_filename(session_key, convo_id)
   else:
     convo_id, messages = get_most_recent_conversation(session_key)
-    #convo_id = get_convo_id(filename)
     request.session["active_convo"] = convo_id
 
   all_convos = get_all_conversations(session_key)
@@ -158,7 +144,7 @@ def index(request):
     user_message = request.POST["text"]
     # Reflect new message in view
     context["messages"].append([0, user_message])
-    # Store user message in S3 bucket
+    # Store user message in conversation
     store_message(session_key,
                   convo_id,
                   True,
@@ -166,15 +152,14 @@ def index(request):
     # Get LLM's reply
     ai_message = get_reply(session_key, convo_id)
     context["messages"].append([1, ai_message])
-    # Store LLM message in S3 bucket
+    # Store LLM message in conversation
     store_message(session_key,
                   convo_id,
                   False,
                   ai_message)
 
   all_sums = [get_summary(session_key, c) for c in all_convos]
-  all_convo_ids = all_convos # TODO: remove
-  convo_list = list(zip(all_convo_ids, all_convos, all_sums))
+  convo_list = list(zip(all_convos, all_sums))
   context["convos"] = convo_list
   print(all_convos)
 
@@ -221,8 +206,6 @@ def get_summary(user_id, convo_id):
   string
     The summary of the conversation.
   """
-  #convo = read_from_s3(filename)
-  #summary = convo["summary"]
   convo = read_from_dynamo(user_id, convo_id)
   return convo["summary"]
 
@@ -243,11 +226,9 @@ def update_convo_summary(user_id, convo_id):
     Indicates whether the summary could be successfully updated.
   """
   is_successful = False
-  #filename = gen_filename(user_id, convo_id)
   convo = get_conversation(user_id, convo_id)
   
   if len(convo) >= 2:
-    #with open(filename, "w") as file:
     client = InferenceClient(api_key=os.environ.get("HF_KEY"))
 
     messages = [{"role": "user", "content": m[1]}
@@ -271,7 +252,6 @@ def update_convo_summary(user_id, convo_id):
       "messages": convo,
       "summary": reply
     }
-    #save_to_s3(convo_dict, filename)
     update_to_dynamo(user_id, convo_id, convo_dict)
 
     is_successful = True
@@ -280,35 +260,10 @@ def update_convo_summary(user_id, convo_id):
       "messages": convo,
       "summary": "A new conversation"
     }
-
-    #save_to_s3(convo_dict, filename)
     update_to_dynamo(user_id, convo_id, convo_dict)
 
     is_successful = True
   return is_successful
-
-def save_to_s3(convo_dict, filename):
-  s3_client = boto3.client("s3")
-  s3_client.put_object(
-    Bucket="django-chatbot-data",
-    Key=filename,
-    Body=bytes(json.dumps(convo_dict).encode("UTF-8"))
-  )
-
-  s3 = boto3.resource("s3")
-  s3_object = s3.Object("django-chatbot-data", filename)
-  s3_object.put(Body=bytes(json.dumps(convo_dict).encode("UTF-8")))
-  return
-
-def read_from_s3(filename):
-  print("READING")
-  print(filename)
-  session = boto3.Session()
-  s3 = session.client("s3")
-  f = BytesIO()
-  s3.download_fileobj("django-chatbot-data", filename, f)
-  content = json.loads(f.getvalue())
-  return content
 
 def add_to_dynamo(convo_dict, user_id, convo_id):
   # Put an item in the table
@@ -374,8 +329,6 @@ def create_conversation(user_id):
   }
   convo_id = str(len(convo_id_list)+1)
   add_to_dynamo(convo, user_id, convo_id)
-  #filename = gen_filename(user_id, convo_id)
-  #save_to_s3(convo, filename)
   
   return convo_id
 
@@ -393,13 +346,6 @@ def get_all_conversations(user_id):
   list
     The convo_id's associated with the user_id.
   """
-  #s3_resource = boto3.resource('s3')
-  #objects = s3_resource.Bucket("django-chatbot-data").objects.all()
-
-  #if len(list(objects)):
-  #  filtered = [f.key for f in objects if user_id in f.key]
-  #else:
-  #  filtered = []
   dynamodb = boto3.resource("dynamodb")
   table = dynamodb.Table("django-chatbot-table")
 
@@ -479,8 +425,6 @@ def get_conversation(user_id, convo_id):
   list
     The messages from the specified conversation.
   """
-  #filename = gen_filename(user_id, convo_id)
-  #messages = read_from_s3(filename)
   item = read_from_dynamo(user_id, convo_id)
 
   return list(item["messages"])
@@ -506,8 +450,6 @@ def update_conversation(user_id, convo_id, new_data):
 
   """
   is_successful = False
-  #filename = gen_filename(user_id, convo_id)
-  #save_to_s3(new_data, filename)
   update_to_dynamo(user_id, convo_id, new_data)
   is_successful = True
   return is_successful
@@ -538,8 +480,8 @@ def gen_filename(user_id, convo_id):
 
 def get_reply(user_id, convo_id):
   """
-  Prompts the LLM for a response. Uses the chat history from S3 as
-  input for the model.
+  Prompts the LLM for a response. Uses the chat history from DynamoDB
+  as input for the model.
   
   Returns
   -------
@@ -577,8 +519,8 @@ def get_reply(user_id, convo_id):
 
 def store_message(user_id, convo_id, is_user, message):
   """
-  Communicates with the S3 bucket to add a new message to the correct
-  convo file.
+  Communicates with the DynamoDB to add a new message to the correct
+  convo Item.
 
   Parameters
   ----------
