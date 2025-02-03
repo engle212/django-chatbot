@@ -15,6 +15,7 @@ import markdown
 from huggingface_hub import InferenceClient
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+from botocore.config import Config
 from io import BytesIO
 
 class ReactView(APIView):
@@ -273,7 +274,10 @@ def update_convo_summary(user_id, convo_id):
 
 def add_to_dynamo(convo_dict, user_id, convo_id):
   # Put an item in the table
-  dynamodb = boto3.resource("dynamodb")
+  dynamo_config = Config(
+    region_name = "us-east"
+  )
+  dynamodb = boto3.resource("dynamodb", dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   table.put_item(
     Item={
@@ -287,7 +291,10 @@ def add_to_dynamo(convo_dict, user_id, convo_id):
 
 def update_to_dynamo(user_id, convo_id, new_data):
   # Modify an existing item
-  dynamodb = boto3.resource("dynamodb")
+  dynamo_config = Config(
+    region_name = "us-east"
+  )
+  dynamodb = boto3.resource("dynamodb", dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   response = table.update_item(
     Key={
@@ -304,7 +311,10 @@ def update_to_dynamo(user_id, convo_id, new_data):
 
 def read_from_dynamo(user_id, convo_id):
   # Find and return an item as a dictionary
-  dynamodb = boto3.resource("dynamodb")
+  dynamo_config = Config(
+    region_name = "us-east"
+  )
+  dynamodb = boto3.resource("dynamodb", dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   response = table.get_item(
     Key={
@@ -352,7 +362,10 @@ def get_all_conversations(user_id):
   list
     The convo_id's associated with the user_id.
   """
-  dynamodb = boto3.resource("dynamodb")
+  dynamo_config = Config(
+    region_name = "us-east"
+  )
+  dynamodb = boto3.resource("dynamodb", dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
 
   response = table.query(
