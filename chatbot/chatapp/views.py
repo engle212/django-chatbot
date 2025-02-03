@@ -277,7 +277,7 @@ def add_to_dynamo(convo_dict, user_id, convo_id):
   dynamo_config = Config(
     region_name = "us-east"
   )
-  dynamodb = boto3.resource("dynamodb", dynamo_config)
+  dynamodb = boto3.resource("dynamodb", config=dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   table.put_item(
     Item={
@@ -294,7 +294,7 @@ def update_to_dynamo(user_id, convo_id, new_data):
   dynamo_config = Config(
     region_name = "us-east"
   )
-  dynamodb = boto3.resource("dynamodb", dynamo_config)
+  dynamodb = boto3.resource("dynamodb", config=dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   response = table.update_item(
     Key={
@@ -314,7 +314,7 @@ def read_from_dynamo(user_id, convo_id):
   dynamo_config = Config(
     region_name = "us-east"
   )
-  dynamodb = boto3.resource("dynamodb", dynamo_config)
+  dynamodb = boto3.resource("dynamodb", config=dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
   response = table.get_item(
     Key={
@@ -365,7 +365,7 @@ def get_all_conversations(user_id):
   dynamo_config = Config(
     region_name = "us-east"
   )
-  dynamodb = boto3.resource("dynamodb", dynamo_config)
+  dynamodb = boto3.resource("dynamodb", config=dynamo_config)
   table = dynamodb.Table("django-chatbot-table")
 
   response = table.query(
